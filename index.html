@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NODE ENGINE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --glass-bg:     rgba(12, 14, 18, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.07);
+  --glass-shine:  rgba(255, 255, 255, 0.12);
+  --accent:       #4fffb0;
+  --accent-dim:   rgba(79, 255, 176, 0.15);
+  --accent2:      #ff6eb4;
+  --text:         rgba(255,255,255,0.75);
+  --text-dim:     rgba(255,255,255,0.25);
+  --text-faint:   rgba(255,255,255,0.1);
+  --cat-source:   #4fffb0;
+  --cat-effect:   #4fc3ff;
+  --cat-mix:      #c084fc;
+  --cat-output:   #ff6eb4;
+  --font: 'DM Mono', monospace;
+  --radius: 14px;
+  --panel-h: 62vh;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  background: #000;
+  overflow: hidden;
+  font-family: var(--font);
+  color: var(--text);
+}
+
+canvas {
+  display: block;
+  width: 100vw; height: 100vh;
+}
+
+/* ── SPACE hint ── */
+#space-hint {
+  position: fixed;
+  bottom: 18px; left: 50%; transform: translateX(-50%);
+  font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--text-dim);
+  pointer-events: none;
+  transition: opacity 0.4s;
+}
+#space-hint.hidden { opacity: 0; }
+
+/* ── OVERLAY PANEL ── */
+.editor-overlay {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: var(--panel-h);
+  display: flex; flex-direction: column;
+
+  /* Glass */
+  background: var(--glass-bg);
+  backdrop-filter: blur(28px) saturate(1.4);
+  -webkit-backdrop-filter: blur(28px) saturate(1.4);
+  border-top: 1px solid var(--glass-shine);
+  border-radius: var(--radius) var(--radius) 0 0;
+  box-shadow:
+    0 -1px 0 rgba(255,255,255,0.04),
+    0 -40px 80px rgba(0,0,0,0.5),
+    inset 0 1px 0 var(--glass-shine);
+
+  /* Slide animation */
+  transform: translateY(100%);
+  transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1);
+  z-index: 10;
+  will-change: transform;
+}
+.editor-overlay.open {
+  transform: translateY(0);
+}
+
+/* Drag handle */
+.editor-handle {
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  gap: 16px;
+  padding: 10px 20px 6px;
+  cursor: ns-resize;
+}
+.editor-handle-bar {
+  width: 36px; height: 3px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.15);
+}
+.editor-handle-label {
+  font-size: 9px; letter-spacing: 0.25em; text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* Inner layout */
+.editor-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  border-top: 1px solid var(--glass-border);
+}
+
+/* ── SIDEBAR ── */
+.editor-sidebar {
+  width: 160px; flex-shrink: 0;
+  border-right: 1px solid var(--glass-border);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.editor-sidebar::-webkit-scrollbar { display: none; }
+
+.editor-panel-title {
+  font-size: 8px; letter-spacing: 0.25em; text-transform: uppercase;
+  color: var(--text-dim); padding: 10px 14px 6px;
+}
+
+.editor-cat-label {
+  font-size: 8px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--text-faint); padding: 8px 14px 3px;
+}
+
+.editor-palette-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 14px; font-size: 10px; color: var(--text-dim);
+  cursor: grab; letter-spacing: 0.03em;
+  transition: color 0.15s, background 0.15s;
+  border-bottom: 1px solid transparent;
+}
+.editor-palette-item:hover {
+  color: var(--text);
+  background: rgba(255,255,255,0.04);
+}
+.editor-palette-item:active { cursor: grabbing; }
+
+/* ── CANVAS AREA ── */
+.editor-area {
+  flex: 1; position: relative; overflow: hidden;
+}
+
+/* Subtle dot grid */
+.editor-area::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px);
+  background-size: 20px 20px;
+  pointer-events: none;
+}
+
+.editor-svg {
+  position: absolute; top: 0; left: 0;
+  pointer-events: none; z-index: 1;
+}
+
+.editor-node-layer {
+  position: absolute; top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 2;
+}
+
+/* ── NODE ── */
+.editor-node {
+  position: absolute; width: 148px;
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(8px);
+  user-select: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.editor-node:hover {
+  border-color: rgba(255,255,255,0.14);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+
+/* Left accent bar by category */
+.editor-node::before {
+  content: '';
+  position: absolute; left: 0; top: 6px; bottom: 6px;
+  width: 2px; border-radius: 2px;
+}
+.editor-node.cat-source::before { background: var(--cat-source); box-shadow: 0 0 6px var(--cat-source); }
+.editor-node.cat-effect::before { background: var(--cat-effect); box-shadow: 0 0 6px var(--cat-effect); }
+.editor-node.cat-mix::before    { background: var(--cat-mix);    box-shadow: 0 0 6px var(--cat-mix); }
+.editor-node.cat-output::before { background: var(--cat-output); box-shadow: 0 0 6px var(--cat-output); }
+
+.editor-node-header {
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 8px 6px 12px;
+  cursor: move;
+}
+.editor-node-label {
+  font-size: 10px; letter-spacing: 0.05em;
+  color: var(--text); flex: 1;
+}
+.editor-node-del {
+  color: var(--text-faint); cursor: pointer;
+  font-size: 14px; line-height: 1; padding: 2px 3px;
+  border-radius: 3px;
+  transition: color 0.1s, background 0.1s;
+}
+.editor-node-del:hover { color: var(--cat-output); background: rgba(255,110,180,0.1); }
+
+.editor-node-ports { padding: 3px 0 5px; }
+
+.editor-port-row {
+  display: flex; align-items: center; height: 20px;
+}
+.editor-port-row.output { justify-content: flex-end; }
+
+.editor-port-label {
+  font-size: 8px; letter-spacing: 0.08em; text-transform: lowercase;
+  color: var(--text-dim); padding: 0 8px;
+}
+
+.editor-port {
+  width: 9px; height: 9px; border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.06);
+  cursor: crosshair; flex-shrink: 0;
+  transition: border-color 0.12s, background 0.12s, transform 0.12s, box-shadow 0.12s;
+}
+.editor-port-row.input  .editor-port { margin-left:  -4.5px; }
+.editor-port-row.output .editor-port { margin-right: -4.5px; }
+
+.editor-port:hover, .editor-port.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  transform: scale(1.4);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+/* Dot in palette / header */
+.editor-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  flex-shrink: 0; display: inline-block;
+}
+
+/* ── ERROR ── */
+#error-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.95); color: #ff4466;
+  font-family: monospace; font-size: 11px;
+  padding: 24px; white-space: pre-wrap; overflow: auto; z-index: 999;
+}
+
+/* ── AUDIO BUTTON ── */
+#audio-btn {
+  position: fixed;
+  top: 16px; right: 16px;
+  font-family: var(--font);
+  font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--text-dim);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--glass-border);
+  border-radius: 4px;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  backdrop-filter: blur(8px);
+  z-index: 5;
+}
+#audio-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
+#audio-btn.active { color: var(--accent); border-color: var(--accent); background: var(--accent-dim); }
+
+/* ── MEDIA NODE BUTTON ── */
+.editor-media-btn {
+  margin: 4px 8px 7px;
+  padding: 4px 8px;
+  font-family: var(--font);
+  font-size: 9px; letter-spacing: 0.1em;
+  color: var(--text-dim);
+  border: 1px dashed rgba(255,255,255,0.1);
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: center;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.editor-media-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<button id="audio-btn">MIC OFF</button>
+<div id="space-hint">SPACE — open graph editor</div>
+<div id="editor-overlay"><!-- populated by Editor.js --></div>
+<div id="error-overlay"></div>
+
+<script type="module" src="main.js"></script>
+<script>
+const errEl = document.getElementById('error-overlay');
+window.addEventListener('unhandledrejection', e => {
+  errEl.style.display = 'block';
+  errEl.textContent = String(e.reason?.stack ?? e.reason);
+});
+window.addEventListener('error', e => {
+  errEl.style.display = 'block';
+  errEl.textContent = String(e.error?.stack ?? e.message);
+});
+</script>
+</body>
+</html>
