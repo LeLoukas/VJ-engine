@@ -259,6 +259,65 @@ export class Editor {
       el.appendChild(btn);
     }
 
+        // WebcamNode : sélection du périphérique vidéo
+    if (type === 'WebcamNode') {
+      const wrap = document.createElement('div');
+      wrap.className = 'editor-webcam-controls';
+
+      const refreshBtn = document.createElement('div');
+      refreshBtn.className = 'editor-media-btn';
+      refreshBtn.textContent = '↻ refresh devices';
+
+      const select = document.createElement('select');
+      select.className = 'editor-webcam-select';
+
+      const fillDevices = async () => {
+        const wNode = this.graph.nodes.find(n => n.id === id);
+        if (!wNode) return;
+
+        const devices = await wNode.refreshDevices();
+        select.innerHTML = '';
+
+        const autoOpt = document.createElement('option');
+        autoOpt.value = '';
+        autoOpt.textContent = 'Default camera';
+        select.appendChild(autoOpt);
+
+        devices.forEach((device, index) => {
+          const opt = document.createElement('option');
+          opt.value = device.deviceId;
+          opt.textContent = device.label || `Camera ${index + 1}`;
+          select.appendChild(opt);
+        });
+
+        select.value = wNode.deviceId || '';
+      };
+
+      refreshBtn.addEventListener('click', async e => {
+        e.stopPropagation();
+        await fillDevices();
+      });
+
+      select.addEventListener('click', e => e.stopPropagation());
+
+      select.addEventListener('change', async e => {
+        e.stopPropagation();
+        const wNode = this.graph.nodes.find(n => n.id === id);
+        if (!wNode?.setDeviceId) return;
+        await wNode.setDeviceId(select.value);
+        await fillDevices();
+      });
+
+      wrap.appendChild(refreshBtn);
+      wrap.appendChild(select);
+      el.appendChild(wrap);
+
+      // Remplissage initial
+      queueMicrotask(() => {
+        fillDevices();
+      });
+    }
+
     this._nodeLayer.appendChild(el);
     this.enodes.push({ id, type, el, x, y });
     return el;
