@@ -2,6 +2,9 @@ import { ShaderSourceNode } from '../nodes/sources/ShaderSourceNode.js';
 import { GameOfLifeNode }   from '../nodes/sources/GameOfLifeNode.js';
 import { WebcamNode }       from '../nodes/sources/WebcamNode.js';
 import { MediaNode }        from '../nodes/sources/MediaNode.js';
+import { TextNode }         from '../nodes/sources/TextNode.js';
+import { DrawNode }         from '../nodes/sources/DrawNode.js';
+import { MidiNode }         from '../nodes/sources/MidiNode.js';
 import { GlitchNode }       from '../nodes/effects/GlitchNode.js';
 import { AudioGlitchNode }  from '../nodes/effects/AudioGlitchNode.js';
 import { FeedbackNode }     from '../nodes/effects/FeedbackNode.js';
@@ -14,6 +17,9 @@ const REGISTRY = {
   GameOfLifeNode,
   WebcamNode,
   MediaNode,
+  TextNode,
+  DrawNode,
+  MidiNode,
   GlitchNode,
   AudioGlitchNode,
   FeedbackNode,

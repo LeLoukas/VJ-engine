@@ -267,8 +267,8 @@ canvas {
 #audio-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
 #audio-btn.active { color: var(--accent); border-color: var(--accent); background: var(--accent-dim); }
 
-/* ── MEDIA NODE BUTTON ── */
-.editor-media-btn {
+/* ── MEDIA NODE BUTTON (replaced) ── */
+.editor-media-btn-old {
   margin: 4px 8px 7px;
   padding: 4px 8px;
   font-family: var(--font);
@@ -304,6 +304,181 @@ canvas {
   padding: 8px;
   font-size: 12px;
 }
+/* ── PARAM PANEL (right) ── */
+.editor-param-panel {
+  width: 180px; flex-shrink: 0;
+  border-left: 1px solid var(--glass-border);
+  overflow-y: auto; scrollbar-width: none;
+  background: rgba(0,0,0,0.2);
+}
+.editor-param-panel.hidden { display: none; }
+.editor-param-panel .editor-panel-title { border-bottom: 1px solid var(--glass-border); }
+
+.editor-panel-row {
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.editor-panel-param-name {
+  font-size: 9px; letter-spacing: 0.1em; color: var(--text-dim);
+  text-transform: lowercase; margin-bottom: 4px;
+}
+.editor-panel-control { display: flex; align-items: center; gap: 6px; }
+.editor-panel-slider {
+  flex: 1; height: 2px; cursor: pointer;
+  accent-color: var(--accent);
+}
+.editor-panel-val {
+  font-size: 9px; color: var(--text); min-width: 30px; text-align: right;
+}
+
+/* ── PARAMS INLINE ── */
+.editor-params-inline {
+  padding: 4px 0 2px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+.editor-param-row {
+  display: flex; align-items: center; gap: 4px;
+  padding: 2px 8px 2px 12px; height: 20px;
+}
+.editor-param-name {
+  font-size: 8px; color: var(--text-dim); width: 42px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.editor-param-slider {
+  flex: 1; height: 2px; cursor: pointer;
+  accent-color: var(--accent);
+}
+.editor-param-val {
+  font-size: 8px; color: var(--text-dim); min-width: 24px; text-align: right;
+}
+
+/* ── SPECIAL UI ── */
+.editor-special-btn {
+  margin: 4px 8px 6px;
+  padding: 4px 8px;
+  font-family: var(--font); font-size: 9px; letter-spacing: 0.1em;
+  color: var(--text-dim);
+  border: 1px dashed rgba(255,255,255,0.1); border-radius: 4px;
+  cursor: pointer; text-align: center;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.editor-special-btn:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-dim); }
+
+.editor-special-wrap {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 8px 6px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+.editor-text-input {
+  flex: 1; font-family: var(--font); font-size: 10px;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 3px; color: var(--text); padding: 3px 6px;
+  outline: none;
+}
+.editor-text-input:focus { border-color: var(--accent); }
+.editor-text-color {
+  width: 20px; height: 20px; border-radius: 3px;
+  border: 1px solid rgba(255,255,255,0.15); cursor: pointer; padding: 0;
+}
+
+.editor-midi-info {
+  font-size: 8px; letter-spacing: 0.08em;
+  color: var(--text-dim); padding: 3px 12px 6px;
+}
+
+/* ── DRAW OVERLAY ── */
+.editor-draw-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; flex-direction: column;
+  background: rgba(0,0,0,0.9);
+}
+.editor-draw-toolbar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 16px; background: rgba(10,10,10,0.95);
+  border-bottom: 1px solid var(--glass-border); flex-shrink: 0;
+  font-family: var(--font); font-size: 10px; color: var(--text-dim);
+}
+.editor-draw-tool { display: flex; align-items: center; gap: 6px; }
+.editor-draw-tool input[type=range] { width: 80px; accent-color: var(--accent); }
+.editor-draw-tool input[type=color] { width: 28px; height: 22px; border: none; border-radius: 3px; cursor: pointer; }
+.editor-draw-btn {
+  font-family: var(--font); font-size: 9px; letter-spacing: 0.1em;
+  padding: 4px 10px; border-radius: 3px; cursor: pointer;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text); transition: background 0.1s;
+}
+.editor-draw-btn:hover { background: rgba(255,255,255,0.12); }
+.editor-draw-btn.danger { border-color: rgba(255,110,180,0.4); color: var(--cat-output); }
+.editor-draw-canvas {
+  flex: 1; cursor: crosshair;
+  background: repeating-conic-gradient(#1a1a1a 0% 25%, #111 0% 50%) 0 0 / 20px 20px;
+}
+
+/* Selected node */
+.editor-node.selected { border-color: rgba(79,255,176,0.6); box-shadow: 0 0 0 1px rgba(79,255,176,0.2); }
+
+/* ── PARAM PANEL updates ── */
+.editor-panel-param-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 4px;
+}
+.editor-panel-midi-label {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 8px; letter-spacing: 0.1em; color: var(--text-faint);
+  cursor: pointer; text-transform: uppercase;
+}
+.editor-panel-midi-label input { cursor: pointer; accent-color: var(--cat-mix); }
+.editor-panel-midi-label:has(input:checked) { color: var(--cat-mix); }
+
+/* MIDI port row inside param panel */
+.editor-midi-port-row {
+  padding: 2px 0;
+  background: rgba(192,132,252,0.05);
+  border-radius: 4px;
+}
+.editor-midi-port-row .editor-port {
+  border-color: var(--cat-mix);
+}
+.editor-midi-port-row .editor-port:hover {
+  background: var(--cat-mix);
+  border-color: var(--cat-mix);
+  box-shadow: 0 0 8px var(--cat-mix);
+}
+
+/* Draw overlay — position fixed over everything including editor */
+.editor-draw-overlay {
+  z-index: 200;
+}
+
+/* ── DRAW CONTROLS (inline in node) ── */
+.editor-draw-controls {
+  gap: 4px;
+  flex-wrap: wrap;
+  padding: 4px 8px 6px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+.editor-draw-toggle {
+  font-family: var(--font); font-size: 9px; letter-spacing: 0.08em;
+  padding: 3px 8px; border-radius: 3px; cursor: pointer;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-dim); transition: all 0.15s; flex: 1;
+}
+.editor-draw-toggle:hover { color: var(--text); }
+.editor-draw-toggle.active {
+  background: rgba(79,255,176,0.12);
+  border-color: var(--accent); color: var(--accent);
+}
+.editor-draw-erase, .editor-draw-clear {
+  font-family: var(--font); font-size: 10px;
+  width: 24px; height: 24px;
+  border-radius: 3px; cursor: pointer;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-dim); transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.editor-draw-erase:hover, .editor-draw-clear:hover { color: var(--text); }
+.editor-draw-erase.active { border-color: var(--cat-output); color: var(--cat-output); }
 </style>
 </head>
 <body>

@@ -47,8 +47,9 @@ void main() {
 
   float plasma   = n1 * 0.5 + n2 * 0.3 + n3 * 0.2;
   vec3  col      = 0.5 + 0.5 * cos(6.28318 * (plasma + vec3(0.0, 0.33, 0.66) + t * 0.1));
+  float vignette = 1.0 - smoothstep(0.5, 1.4, length(p));
 
-  fragColor = vec4(col, 1.0);
+  fragColor = vec4(col * vignette, 1.0);
 }`;
 
 const VERT = `#version 300 es

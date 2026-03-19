@@ -46,6 +46,7 @@ export class EffectNode extends Node {
     gl.viewport(0, 0, this.width, this.height);
     gl.useProgram(this.program);
     this.renderer.setGlobalUniforms(this.program);
+    this.setParamUniforms(this.program);
 
     if (inputTexture !== null) {
       gl.activeTexture(gl.TEXTURE0);

@@ -1,8 +1,22 @@
 export class NodeGraph {
   constructor() {
-    this.nodes    = [];
-    this.renderer = null;
-    this._outputs = new Map();
+    this.nodes        = [];
+    this.renderer     = null;
+    this._outputs     = new Map();
+    // Mappings MIDI : [{ midiNode, cc, targetNode, paramName }]
+    this._midiMappings = [];
+  }
+
+  /** Mappe un CC MIDI sur un param d'un node */
+  addMidiMapping(midiNode, cc, targetNode, paramName) {
+    this._midiMappings.push({ midiNode, cc: parseInt(cc), targetNode, paramName });
+  }
+
+  removeMidiMapping(midiNode, cc, targetNode, paramName) {
+    this._midiMappings = this._midiMappings.filter(m =>
+      !(m.midiNode === midiNode && m.cc === parseInt(cc) &&
+        m.targetNode === targetNode && m.paramName === paramName)
+    );
   }
 
   // ── Enregistrement ────────────────────────────────────────
@@ -105,9 +119,32 @@ export class NodeGraph {
       }
       node._injectTextures(resolved);
 
+      // Résolution MIDI : ports dynamiques midi_<param>
+      for (const [portName, srcNode] of node.connections) {
+        if (portName.startsWith('midi_') && srcNode.constructor.name === 'MidiNode') {
+          const paramName = portName.replace('midi_', '');
+          const def = node.params?.find(p => p.name === paramName);
+          if (def) {
+            // Trouve le CC connecté via l'éditeur (stocké dans srcNode._portCC)
+            const cc  = (srcNode._portCC && srcNode._portCC[portName]) ?? 0;
+            const val = srcNode.getCCValue(cc);
+            node.setParam(paramName, def.min + val * (def.max - def.min));
+          }
+        }
+      }
+
       const outputTex = node.render();
       if (outputTex !== null) {
         this._outputs.set(node.id, outputTex);
+      }
+    }
+
+    // Mappings MIDI manuels (via addMidiMapping)
+    for (const { midiNode, cc, targetNode, paramName } of this._midiMappings) {
+      const val = midiNode.getCCValue(cc);
+      const def = targetNode.params?.find(p => p.name === paramName);
+      if (def) {
+        targetNode.setParam(paramName, def.min + val * (def.max - def.min));
       }
     }
   }
