@@ -70,6 +70,9 @@ export class MediaNode extends Node {
       this._loaded  = true;
     };
     img.src = url;
+    img.addEventListener('error', () => {
+      console.error('[MediaNode] Image load failed:', url);
+    }, { once: true });
   }
 
   _loadVideo(url) {
@@ -80,6 +83,9 @@ export class MediaNode extends Node {
     }
     const video = document.createElement('video');
     video.src       = url;
+    video.addEventListener('error', (e) => {
+      console.error('[MediaNode] Video load failed:', url, e.target.error?.message ?? e);
+    }, { once: true });
     video.loop      = true;
     video.muted     = true;
     video.autoplay  = true;

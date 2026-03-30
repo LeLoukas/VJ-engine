@@ -50,7 +50,8 @@ export class OutputNode extends Node {
     this.renderer.setGlobalUniforms(this.program);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, inputTexture);
-    gl.uniform1i(gl.getUniformLocation(this.program, 'u_input'), 0);
+    if (!this._inputLoc) this._inputLoc = gl.getUniformLocation(this.program, 'u_input');
+    gl.uniform1i(this._inputLoc, 0);
     this.renderer.quad.draw();
     return null;
   }

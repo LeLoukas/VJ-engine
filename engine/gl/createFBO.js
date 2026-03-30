@@ -16,11 +16,15 @@ export function createFBO(gl, width, height) {
   gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0,
                           gl.TEXTURE_2D, texture, 0);
+  // Clear to black immediately — évite lazy initialization WebGL warning
+  gl.clearColor(0, 0, 0, 1);
+  gl.clear(gl.COLOR_BUFFER_BIT);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   return { fbo, texture };
 }
 
 export function resizeFBO(gl, fboObj, width, height) {
+  if (!fboObj) return createFBO(gl, width, height);
   gl.deleteTexture(fboObj.texture);
   gl.deleteFramebuffer(fboObj.fbo);
   return createFBO(gl, width, height);

@@ -12,8 +12,9 @@ export class Renderer {
     this.time   = 0;
     this.graph  = null;
 
-    this.quad   = new Quad(this.gl);
-    this.audio  = new AudioAnalyser(this.gl);
+    this.quad            = new Quad(this.gl);
+    this.audio           = new AudioAnalyser(this.gl);
+    this._routeRegistry  = new Map();
 
     this._bindResize();
   }
@@ -53,12 +54,18 @@ export class Renderer {
    */
   setGlobalUniforms(program) {
     const gl = this.gl;
-
-    const lTime = gl.getUniformLocation(program, 'u_time');
-    const lRes  = gl.getUniformLocation(program, 'u_resolution');
-    if (lTime) gl.uniform1f(lTime, this.time);
-    if (lRes)  gl.uniform2f(lRes,  this.width, this.height);
-
+    // Cache des locations par program pour éviter getUniformLocation chaque frame
+    if (!this._uniformCache) this._uniformCache = new WeakMap();
+    let locs = this._uniformCache.get(program);
+    if (!locs) {
+      locs = {
+        time: gl.getUniformLocation(program, 'u_time'),
+        res:  gl.getUniformLocation(program, 'u_resolution'),
+      };
+      this._uniformCache.set(program, locs);
+    }
+    if (locs.time) gl.uniform1f(locs.time, this.time);
+    if (locs.res)  gl.uniform2f(locs.res,  this.width, this.height);
     this.audio.bindUniforms(gl, program, 7);
   }
 
@@ -73,7 +80,19 @@ export class Renderer {
 
   render(dt) {
     this.time += dt;
+    this._routeRegistry.clear();
     this.audio.update();
     if (this.graph) this.graph.execute();
+
+    // ── FPS counter ───────────────────────────────────────
+    this._fpsFrames = (this._fpsFrames ?? 0) + 1;
+    this._fpAccum   = (this._fpAccum   ?? 0) + dt;
+    if (this._fpAccum >= 0.5) {
+      this.fps       = Math.round(this._fpsFrames / this._fpAccum);
+      this._fpsFrames = 0;
+      this._fpAccum   = 0;
+    }
+
+
   }
 }

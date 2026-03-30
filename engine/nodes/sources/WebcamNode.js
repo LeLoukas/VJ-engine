@@ -3,8 +3,9 @@ import { createProgram } from '../../gl/createProgram.js';
 
 /**
  * WebcamNode
- * Source vidéo live via MediaDevices / getUserMedia.
- * Permet maintenant de choisir explicitement un périphérique vidéo (deviceId).
+ * Capture le flux webcam via getUserMedia et l'upload chaque frame
+ * comme texture WebGL2.
+ * Port de sortie : 'output'
  */
 
 const VERT = `#version 300 es
@@ -29,13 +30,9 @@ export class WebcamNode extends Node {
     super();
     this.label    = 'Webcam';
     this._video   = null;
-    this._stream  = null;
     this._texture = null;
     this._ready   = false;
     this._error   = null;
-
-    this.deviceId = '';
-    this.devices  = [];
   }
 
   get inputPorts()  { return []; }
@@ -46,19 +43,12 @@ export class WebcamNode extends Node {
     const gl = renderer.gl;
     this.program = createProgram(gl, VERT, FRAG);
 
+    // Texture vidéo
     this._texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, this._texture);
-    gl.texImage2D(
-      gl.TEXTURE_2D,
-      0,
-      gl.RGBA8,
-      1,
-      1,
-      0,
-      gl.RGBA,
-      gl.UNSIGNED_BYTE,
-      new Uint8Array([0, 0, 0, 255])
-    );
+    // Placeholder 1x1 noir pendant que la caméra s'initialise
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, 1, 1, 0,
+                  gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0,0,0,255]));
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -67,120 +57,47 @@ export class WebcamNode extends Node {
     this._startCamera();
   }
 
-  async refreshDevices() {
-    try {
-      if (!navigator.mediaDevices?.enumerateDevices) {
-        console.warn('WebcamNode: enumerateDevices() not supported');
-        return [];
-      }
-
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      this.devices = devices.filter(d => d.kind === 'videoinput');
-      return this.devices;
-    } catch (e) {
-      console.warn('WebcamNode: failed to enumerate devices —', e.message);
-      return [];
-    }
-  }
-
-  async setDeviceId(deviceId) {
-    if (this.deviceId === deviceId) return;
-    this.deviceId = deviceId || '';
-    await this._startCamera();
-  }
-
-  _stopCurrentStream() {
-    this._ready = false;
-
-    if (this._video) {
-      this._video.pause();
-      this._video.srcObject = null;
-    }
-
-    if (this._stream) {
-      this._stream.getTracks().forEach(t => t.stop());
-      this._stream = null;
-    }
-  }
-
-  _buildConstraints() {
-    if (this.deviceId) {
-      return {
-        video: {
-          deviceId: { exact: this.deviceId },
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
-        audio: false,
-      };
-    }
-
-    return {
-      video: {
-        facingMode: 'user',
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
-      },
-      audio: false,
-    };
-  }
-
   async _startCamera() {
-    this._stopCurrentStream();
-    this._error = null;
-
     try {
-      const stream = await navigator.mediaDevices.getUserMedia(this._buildConstraints());
-
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,
+      });
       const video = document.createElement('video');
       video.srcObject = stream;
-      video.autoplay = true;
+      video.autoplay  = true;
       video.playsInline = true;
-      video.muted = true;
+      video.muted     = true;
       await video.play();
-
-      this._stream = stream;
       this._video = video;
       this._ready = true;
-
-      await this.refreshDevices();
-
-      // Si aucun deviceId n’était encore fixé, on récupère celui réellement utilisé
-      const track = stream.getVideoTracks()[0];
-      const settings = track?.getSettings?.();
-      if (!this.deviceId && settings?.deviceId) {
-        this.deviceId = settings.deviceId;
-      }
     } catch (e) {
       this._error = e.message;
       console.warn('WebcamNode: camera unavailable —', e.message);
-
-      // Même en cas d’échec, on tente de lister les devices si possible
-      await this.refreshDevices();
     }
   }
 
   render() {
     const { gl } = this.renderer;
 
+    // Upload la frame vidéo si prête
     if (this._ready && this._video?.readyState >= 2) {
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
       gl.bindTexture(gl.TEXTURE_2D, this._texture);
-      gl.texImage2D(
-        gl.TEXTURE_2D,
-        0,
-        gl.RGBA8,
-        gl.RGBA,
-        gl.UNSIGNED_BYTE,
-        this._video
-      );
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8,
+                    gl.RGBA, gl.UNSIGNED_BYTE, this._video);
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
     }
 
+    // Rendu vers framebuffer (utiliser le FBO du renderer si dispo)
+    // Pour simplifier : on retourne directement la texture vidéo
+    // (OutputNode ou EffectNode suivant s'en occupent via TEXTURE0)
     return this._texture;
   }
 
   destroy() {
-    this._stopCurrentStream();
+    if (this._video?.srcObject) {
+      this._video.srcObject.getTracks().forEach(t => t.stop());
+    }
   }
 }

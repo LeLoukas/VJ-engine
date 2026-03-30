@@ -16,7 +16,7 @@ void main() {
  * Port de sortie : 'output'
  */
 export class EffectNode extends Node {
-  get inputPorts() { return ['input']; }
+  get inputPorts() { return ['input', 'bypass']; }
 
   /** @returns {string} GLSL fragment shader source */
   get fragSrc() {
@@ -39,6 +39,9 @@ export class EffectNode extends Node {
   get texture() { return this._fbo.texture; }
 
   render() {
+    // Bypass — retourne l'input sans traitement
+    if (this.bypassed) return this.getInputTexture('input');
+
     const { gl } = this.renderer;
     const inputTexture = this.getInputTexture('input');
 
@@ -51,7 +54,8 @@ export class EffectNode extends Node {
     if (inputTexture !== null) {
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, inputTexture);
-      gl.uniform1i(gl.getUniformLocation(this.program, 'u_input'), 0);
+      if (!this._inputLoc) this._inputLoc = gl.getUniformLocation(this.program, 'u_input');
+      gl.uniform1i(this._inputLoc, 0);
     }
 
     this.renderer.quad.draw();

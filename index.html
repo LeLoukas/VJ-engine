@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+  <meta http-equiv="Permissions-Policy" content="window-management=*">
 <title>NODE ENGINE</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
@@ -22,7 +23,7 @@
   --cat-effect:   #4fc3ff;
   --cat-mix:      #c084fc;
   --cat-output:   #ff6eb4;
-  --font: 'DM Mono', monospace;
+  --font: 'DM Mono', ui-monospace, SFMono-Regular, Consolas, monospace;
   --radius: 14px;
   --panel-h: 62vh;
 }
@@ -244,27 +245,22 @@ canvas {
 #error-overlay {
   display: none; position: fixed; inset: 0;
   background: rgba(0,0,0,0.95); color: #ff4466;
-  font-family: monospace; font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 11px;
   padding: 24px; white-space: pre-wrap; overflow: auto; z-index: 999;
 }
 
-/* ── AUDIO BUTTON ── */
-#audio-btn {
+/* ── TOOLBAR ── */
+#toolbar {
   position: fixed;
-  top: 16px; right: 16px;
-  font-family: var(--font);
-  font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
-  color: var(--text-dim);
-  background: rgba(255,255,255,0.04);
-  border: 1px solid var(--glass-border);
-  border-radius: 4px;
-  padding: 5px 10px;
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  top: 12px; right: 12px;
+  display: flex; align-items: center; gap: 8px;
+  z-index: 10;
   backdrop-filter: blur(8px);
-  z-index: 5;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  padding: 5px 10px;
 }
-#audio-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
 #audio-btn.active { color: var(--accent); border-color: var(--accent); background: var(--accent-dim); }
 
 /* ── MEDIA NODE BUTTON (replaced) ── */
@@ -287,30 +283,7 @@ canvas {
   background: var(--accent-dim);
 }
 
-/* ── Webcam NODE BUTTON ── */
-.editor-webcam-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.editor-webcam-select {
-  width: 100%;
-  background: rgba(255,255,255,0.08);
-  color: white;
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 8px;
-  padding: 8px;
-  font-size: 12px;
-}
-/* ── PARAM PANEL (right) ── */
-.editor-param-panel {
-  width: 180px; flex-shrink: 0;
-  border-left: 1px solid var(--glass-border);
-  overflow-y: auto; scrollbar-width: none;
-  background: rgba(0,0,0,0.2);
-}
+/* ── PARAM PANEL (right) — inside right-col ── */
 .editor-param-panel.hidden { display: none; }
 .editor-param-panel .editor-panel-title { border-bottom: 1px solid var(--glass-border); }
 
@@ -358,6 +331,7 @@ canvas {
   padding: 4px 8px;
   font-family: var(--font); font-size: 9px; letter-spacing: 0.1em;
   color: var(--text-dim);
+  background: transparent;
   border: 1px dashed rgba(255,255,255,0.1); border-radius: 4px;
   cursor: pointer; text-align: center;
   transition: color 0.15s, border-color 0.15s, background 0.15s;
@@ -479,11 +453,547 @@ canvas {
 }
 .editor-draw-erase:hover, .editor-draw-clear:hover { color: var(--text); }
 .editor-draw-erase.active { border-color: var(--cat-output); color: var(--cat-output); }
+
+/* ── MIDI NODE UI ── */
+.editor-midi-wrap {
+  padding: 6px 8px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.editor-midi-select {
+  width: 100%; font-family: var(--font); font-size: 9px;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text); border-radius: 3px; padding: 3px 6px; cursor: pointer;
+  outline: none;
+}
+.editor-midi-select:focus { border-color: var(--cat-mix); }
+
+/* MPK Mini visualizer */
+.editor-midi-viz { display: flex; flex-direction: column; gap: 4px; }
+
+.editor-midi-knobs {
+  display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px;
+}
+.editor-midi-knob {
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  cursor: pointer;
+}
+.editor-midi-knob-fill-wrap {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.04);
+  overflow: hidden; position: relative; display: flex; align-items: flex-end;
+}
+.editor-midi-knob-fill {
+  width: 100%; height: 0%; background: var(--cat-mix);
+  transition: height 0.05s;
+  position: absolute; bottom: 0; border-radius: 50%;
+}
+.editor-midi-knob span { font-size: 7px; color: var(--text-faint); }
+.editor-midi-knob.active .editor-midi-knob-fill-wrap { border-color: var(--cat-mix); }
+
+.editor-midi-pads {
+  display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px;
+}
+.editor-midi-pad {
+  height: 14px; border-radius: 2px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  transition: background 0.05s, border-color 0.05s;
+  cursor: pointer;
+}
+.editor-midi-pad.active {
+  background: var(--cat-mix);
+  border-color: var(--cat-mix);
+  box-shadow: 0 0 6px var(--cat-mix);
+}
+
+/* MIDI ports sous le node concerné */
+.editor-midi-ports {
+  border-top: 1px solid rgba(192,132,252,0.15);
+  padding: 2px 0;
+  background: rgba(192,132,252,0.04);
+}
+.editor-midi-port-row-node {
+  height: 20px; display: flex; align-items: center;
+}
+.editor-midi-port-row-node .editor-port {
+  margin-left: -4.5px;
+  border-color: var(--cat-mix);
+}
+.editor-midi-port-row-node .editor-port:hover,
+.editor-midi-port-row-node .editor-port.active {
+  background: var(--cat-mix); border-color: var(--cat-mix);
+  box-shadow: 0 0 6px var(--cat-mix);
+}
+
+/* ── MIDI NODE — nouvelle UI ── */
+.editor-midi-row { display: flex; gap: 4px; align-items: center; }
+
+.editor-midi-channels { display: flex; flex-direction: column; gap: 3px; }
+.editor-midi-chan-boxes {
+  display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px;
+}
+.editor-midi-chan-label {
+  display: flex; flex-direction: column; align-items: center;
+  font-size: 7px; color: var(--text-faint); cursor: pointer; gap: 1px;
+}
+.editor-midi-chan-label input { width: 10px; height: 10px; cursor: pointer; accent-color: var(--cat-mix); }
+.editor-midi-chan-label:has(input:checked) { color: var(--cat-mix); }
+
+.editor-midi-sec-label {
+  font-size: 7px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--text-faint); padding: 3px 0 2px;
+}
+
+/* Knobs */
+.editor-midi-knob-label { font-size: 7px; color: var(--text-faint); }
+.editor-midi-knob-val {
+  font-size: 7px; color: var(--cat-mix);
+  min-width: 20px; text-align: center;
+  opacity: 0; transition: opacity 0.2s;
+}
+.editor-midi-knob.active .editor-midi-knob-val { opacity: 1; }
+
+/* Pads */
+.editor-midi-pad { font-size: 7px; color: var(--text-faint); display: flex; align-items: center; justify-content: center; }
+
+/* Piano notes */
+.editor-midi-notes {
+  display: flex; gap: 1px; height: 14px; align-items: flex-end;
+}
+.editor-midi-note {
+  flex: 1; min-width: 2px; height: 100%; border-radius: 1px;
+  background: rgba(255,255,255,0.08);
+  transition: background 0.05s;
+}
+.editor-midi-note.black {
+  height: 60%; background: rgba(255,255,255,0.15);
+}
+.editor-midi-note.active {
+  background: var(--accent) !important;
+  box-shadow: 0 0 4px var(--accent);
+}
+
+/* MIDI port sous node — range inputs */
+.editor-midi-range-row {
+  display: flex; align-items: center; gap: 3px;
+  padding: 2px 8px 2px 12px;
+}
+.editor-midi-range-label { font-size: 7px; color: var(--text-faint); }
+.editor-midi-range-input {
+  width: 46px; font-family: var(--font); font-size: 9px;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 3px; color: var(--text); padding: 2px 4px; text-align: right;
+  outline: none;
+  /* Cacher les flèches natives */
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.editor-midi-range-input::-webkit-outer-spin-button,
+.editor-midi-range-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.editor-midi-range-input:focus { border-color: var(--cat-mix); }
+.editor-midi-live-val {
+  font-size: 8px; color: var(--accent); min-width: 28px; text-align: right;
+  padding-right: 6px; font-variant-numeric: tabular-nums;
+}
+
+/* ── MIDI NODE COMPACT ── */
+.editor-midi-compact {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 5px 8px 6px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+.editor-midi-cfg-btn {
+  font-size: 9px; padding: 3px 8px;
+  width: 100%; text-align: center;
+  background: transparent; margin: 0;
+}
+
+/* ── MIDI FLOATING PANEL ── */
+.editor-midi-panel {
+  position: fixed;
+  background: rgba(10,10,14,0.97);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 10px 12px;
+  width: 260px;
+  z-index: 500;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.7);
+  display: flex; flex-direction: column; gap: 8px;
+  font-family: var(--font);
+}
+
+/* ── MIDI active ports sous le node ── */
+.editor-midi-active-ports {
+  border-top: 1px solid rgba(192,132,252,0.15);
+  background: rgba(192,132,252,0.03);
+}
+.editor-midi-out-row { height: 20px; }
+.editor-midi-out-row .editor-port { margin-right: -4.5px; }
+
+/* ── Source selector grid ── */
+.editor-midi-src-grid { display: flex; gap: 8px; }
+.editor-midi-src-group { flex: 1; }
+.editor-midi-src-items { display: flex; flex-wrap: wrap; gap: 3px; }
+.editor-midi-src-label {
+  display: flex; align-items: center; gap: 3px;
+  font-size: 9px; color: var(--text-dim); cursor: pointer;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 3px; padding: 2px 5px;
+  transition: border-color 0.1s, color 0.1s;
+}
+.editor-midi-src-label:has(input:checked) {
+  border-color: var(--cat-mix); color: var(--cat-mix);
+  background: rgba(192,132,252,0.08);
+}
+.editor-midi-src-label input { display: none; }
+
+/* Dot d'activité live */
+.editor-midi-src-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: transparent; border: 1px solid rgba(255,255,255,0.15);
+  transition: background 0.05s;
+}
+.editor-midi-src-dot.lit {
+  background: var(--cat-mix);
+  border-color: var(--cat-mix);
+  box-shadow: 0 0 4px var(--cat-mix);
+}
+
+/* Canal pads */
+.editor-midi-chan-row { display: flex; flex-direction: column; gap: 2px; }
+
+/* ── MIDI range in right panel ── */
+.editor-panel-midi-range {
+  display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+}
+.editor-panel-live {
+  margin-left: auto; color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+/* Fix draw-related buttons background */
+.editor-draw-toggle, .editor-draw-erase, .editor-draw-clear {
+  background: transparent !important;
+}
+
+/* ── MODE CAROUSEL ── */
+.editor-mode-carousel {
+  max-height: 120px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.1) transparent;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 4px;
+  width: 100%;
+}
+.editor-mode-carousel::-webkit-scrollbar { width: 4px; }
+.editor-mode-carousel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+.editor-mode-item {
+  padding: 5px 10px;
+  font-size: 10px; letter-spacing: 0.05em;
+  color: var(--text-dim); cursor: pointer;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: color 0.1s, background 0.1s;
+}
+.editor-mode-item:last-child { border-bottom: none; }
+.editor-mode-item:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+.editor-mode-item.active {
+  color: var(--accent);
+  background: rgba(79,255,176,0.08);
+  border-left: 2px solid var(--accent);
+}
+
+/* ── BYPASS ── */
+.editor-bypass-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  margin-bottom: 4px;
+}
+.editor-bypass-label {
+  font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--text-dim);
+}
+.editor-bypass-btn {
+  font-family: var(--font); font-size: 9px; letter-spacing: 0.15em;
+  padding: 3px 10px; border-radius: 3px; cursor: pointer;
+  background: transparent; border: 1px solid rgba(255,255,255,0.12);
+  color: var(--text-dim); transition: all 0.15s;
+}
+.editor-bypass-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+.editor-bypass-btn.active {
+  background: rgba(255,110,180,0.15);
+  border-color: var(--accent2);
+  color: var(--accent2);
+  box-shadow: 0 0 8px rgba(255,110,180,0.2);
+}
+
+/* Node bypassé — look désactivé */
+.editor-node.bypassed {
+  opacity: 0.5;
+  border-style: dashed;
+}
+.editor-node.bypassed .editor-node-header::after {
+  content: 'bypassed';
+  font-size: 8px; letter-spacing: 0.1em;
+  color: var(--accent2); margin-left: auto;
+}
+
+/* ── BYPASS PORT ── */
+.editor-bypass-port-section {
+  border-top: 1px solid rgba(255,110,180,0.15);
+  background: rgba(255,110,180,0.03);
+}
+.editor-bypass-port-row { height: 20px; }
+.editor-bypass-port {
+  border-color: var(--accent2) !important;
+  margin-left: -4.5px;
+}
+.editor-bypass-port:hover, .editor-bypass-port.active {
+  background: var(--accent2) !important;
+  border-color: var(--accent2) !important;
+  box-shadow: 0 0 6px var(--accent2) !important;
+}
+
+/* ── REROUTE NODE — compact dot ── */
+.editor-node.cat-utility {
+  width: 28px !important;
+  background: rgba(255,255,255,0.06);
+  border-radius: 50% !important;
+  border-color: #444 !important;
+}
+.editor-node.cat-utility:hover { border-color: #888 !important; }
+.editor-node.cat-utility .editor-node-header {
+  padding: 4px;
+  justify-content: center;
+  cursor: move;
+  border-bottom: none;
+}
+.editor-node.cat-utility .editor-node-label { display: none; }
+.editor-node.cat-utility .editor-node-del   { display: none; }
+.editor-node.cat-utility .editor-node::before { display: none; }
+.editor-node.cat-utility .editor-node-ports {
+  padding: 0;
+}
+.editor-node.cat-utility .editor-port-row {
+  height: 14px;
+}
+.editor-node.cat-utility .editor-bypass-port-section { display: none; }
+
+/* ── ROUTE IN/OUT nodes ── */
+.editor-node.cat-RouteOutNode,
+.editor-node.cat-RouteInNode {
+  width: 90px !important;
+  border-radius: 12px !important;
+  background: rgba(255,255,255,0.06) !important;
+}
+.editor-node.cat-RouteOutNode { border-color: #f97316 !important; }
+.editor-node.cat-RouteInNode  { border-color: #22d3ee !important; }
+.editor-node.cat-RouteOutNode .editor-node-header { border-bottom: none; }
+.editor-node.cat-RouteInNode  .editor-node-header { border-bottom: none; }
+
+.editor-route-name {
+  display: block; width: calc(100% - 12px);
+  margin: 0 6px 6px;
+  font-family: var(--font); font-size: 9px; font-weight: 500;
+  background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 3px; color: var(--text); padding: 2px 5px; text-align: center;
+  outline: none; letter-spacing: 0.05em;
+}
+.editor-node.cat-RouteOutNode .editor-route-name:focus { border-color: #f97316; }
+.editor-node.cat-RouteInNode  .editor-route-name:focus { border-color: #22d3ee; }
+
+/* ── RIGHT COLUMN ── */
+.editor-right-col {
+  display: flex; flex-direction: column;
+  border-left: 1px solid var(--glass-border);
+  width: 176px; flex-shrink: 0;
+}
+.editor-param-panel {
+  flex: 1; overflow-y: auto; scrollbar-width: none;
+  background: rgba(0,0,0,0.2); min-height: 0;
+}
+.editor-param-panel::-webkit-scrollbar { display: none; }
+
+/* ── PREVIEW ZONE ── */
+.editor-preview-zone {
+  border-top: 1px solid var(--glass-border);
+  flex-shrink: 0;
+  background: #050505;
+  margin-top: auto;
+}
+.debug-preview-wrap {
+  display: flex; flex-direction: column;
+}
+.debug-preview-title {
+  font-size: 8px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--text-faint); padding: 5px 8px 3px;
+}
+.debug-preview-canvas {
+  display: block; width: 100%; height: auto;
+  image-rendering: pixelated;
+}
+.debug-preview-label {
+  font-size: 8px; color: var(--text-dim); letter-spacing: 0.05em;
+  padding: 3px 8px 5px; text-align: center;
+}
+
+/* ── ROUTE OUT — flèche vers la droite ── */
+.editor-node.cat-RouteOutNode {
+  width: 80px !important;
+  border-color: #f97316 !important;
+  background: rgba(249,115,22,0.08) !important;
+  clip-path: polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%) !important;
+  border-radius: 0 !important;
+  border-right: none !important;
+}
+.editor-node.cat-RouteOutNode .editor-node-header {
+  border-bottom: none; padding: 5px 18px 5px 8px;
+}
+.editor-node.cat-RouteOutNode .editor-node-label { color: #f97316; font-size: 10px; }
+
+/* ── ROUTE IN — flèche depuis la gauche ── */
+.editor-node.cat-RouteInNode {
+  width: 80px !important;
+  border-color: #22d3ee !important;
+  background: rgba(34,211,238,0.08) !important;
+  clip-path: polygon(15% 0, 100% 0, 100% 100%, 15% 100%, 0 50%) !important;
+  border-radius: 0 !important;
+  border-left: none !important;
+}
+.editor-node.cat-RouteInNode .editor-node-header {
+  border-bottom: none; padding: 5px 8px 5px 18px;
+}
+.editor-node.cat-RouteInNode .editor-node-label { color: #22d3ee; font-size: 10px; }
+
+/* Name input dans Route nodes */
+.editor-route-name {
+  display: block;
+  margin: 0 8px 5px;
+  width: calc(100% - 16px);
+  font-family: var(--font); font-size: 9px;
+  background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 2px; color: var(--text); padding: 2px 4px; text-align: center;
+  outline: none;
+}
+.editor-node.cat-RouteOutNode .editor-route-name:focus { border-color: #f97316; }
+.editor-node.cat-RouteInNode  .editor-route-name:focus { border-color: #22d3ee; }
+
+/* Port position override pour les route nodes */
+.editor-node.cat-RouteOutNode .editor-port-row.input .editor-port { margin-left: -4.5px; }
+.editor-node.cat-RouteInNode  .editor-port-row.output .editor-port { margin-right: -4.5px; }
+
+/* ── SAVE/LOAD BUTTONS ── */
+.editor-io-btn {
+  font-family: var(--font); font-size: 9px; letter-spacing: 0.12em;
+  padding: 3px 10px; border-radius: 3px; cursor: pointer;
+  background: transparent; border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-dim); transition: all 0.15s; margin-left: 6px;
+}
+.editor-io-btn:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-dim); }
+.editor-scene-btn { border-color: rgba(192,132,252,0.3); color: var(--cat-mix); }
+.editor-scene-btn:hover { border-color: var(--cat-mix); background: rgba(192,132,252,0.1); }
+
+/* ── SELECTION BOX ── */
+.editor-select-box {
+  position: absolute; pointer-events: none;
+  border: 1px solid rgba(79,255,176,0.5);
+  background: rgba(79,255,176,0.05);
+  border-radius: 2px;
+}
+
+/* ── INSERT FLASH ── */
+.editor-node.insert-flash {
+  animation: insertFlash 0.4s ease-out;
+}
+@keyframes insertFlash {
+  0%   { box-shadow: 0 0 0 3px var(--accent); }
+  100% { box-shadow: none; }
+}
+
+/* ── LFO NODE ── */
+.editor-lfo-viz {
+  display: block; width: 100%; height: 28px;
+  background: rgba(0,0,0,0.3);
+  border-top: 1px solid rgba(255,255,255,0.05);
+  cursor: default;
+}
+
+/* ── AUDIO NODE ── */
+.editor-audio-wrap {
+  padding: 5px 8px 6px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  display: flex; flex-direction: column; gap: 4px;
+}
+.editor-audio-meters { display: flex; flex-direction: column; gap: 2px; }
+.editor-audio-meter-row { display: flex; align-items: center; gap: 5px; height: 12px; }
+.editor-audio-meter-label {
+  font-size: 7px; letter-spacing: 0.08em; color: var(--text-dim);
+  width: 36px; flex-shrink: 0;
+}
+.editor-audio-bar-wrap {
+  flex: 1; height: 4px; background: rgba(255,255,255,0.06);
+  border-radius: 2px; overflow: hidden;
+}
+.editor-audio-bar {
+  height: 100%; width: 0%; border-radius: 2px;
+  background: var(--accent); transition: width 0.05s;
+}
+.editor-tap-btn {
+  font-family: var(--font); font-size: 9px; letter-spacing: 0.2em;
+  padding: 4px 0; border-radius: 3px; cursor: pointer;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-dim); transition: all 0.1s; width: 100%;
+}
+.editor-tap-btn:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-dim); }
+.editor-tap-btn:active { background: var(--accent); color: #000; transform: scale(0.97); }
+
+/* ── SHADER EDIT NODE ── */
+.editor-shaderedit-wrap {
+  display: flex; flex-direction: column;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+.editor-shaderedit-ta {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 8.5px; line-height: 1.4;
+  background: rgba(0,0,0,0.4); color: #c8e6c9;
+  border: none; border-bottom: 1px solid rgba(255,255,255,0.05);
+  resize: vertical; min-height: 120px; max-height: 320px;
+  padding: 6px 8px; outline: none; width: 100%; box-sizing: border-box;
+  tab-size: 2;
+}
+.editor-shaderedit-ta:focus { background: rgba(0,0,0,0.6); }
+.editor-shaderedit-err {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 8px; color: #ff6b6b;
+  padding: 4px 8px; background: rgba(255,0,0,0.08);
+  border-top: 1px solid rgba(255,0,0,0.15);
+  white-space: pre-wrap; max-height: 60px; overflow-y: auto;
+}
+.editor-shaderedit-err.hidden { display: none; }
+
+/* ── FPS + OUTPUT ── */
+.fps-display {
+  font-family: var(--font); font-size: 10px; letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.25); min-width: 42px; text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.toolbar-btn {
+  font-family: var(--font); font-size: 9px; letter-spacing: 0.12em;
+  padding: 4px 10px; border-radius: 3px; cursor: pointer;
+  background: transparent; border: 1px solid rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.4); transition: all 0.15s;
+}
+.toolbar-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
-<button id="audio-btn">MIC OFF</button>
+<div id="toolbar">
+  <span id="fps-display" class="fps-display">— fps</span>
+  <button id="audio-btn" class="toolbar-btn">MIC</button>
+</div>
 <div id="space-hint">SPACE — open graph editor</div>
 <div id="editor-overlay"><!-- populated by Editor.js --></div>
 <div id="error-overlay"></div>
