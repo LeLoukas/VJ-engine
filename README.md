@@ -8,9 +8,9 @@ No install needed, just
 
 
 ### Usage
-click `space` to toggle the editor view
-click `enter` to add a feedback node before the output (screen)
-add the nodes you want by selecting them in the left panel
+- Click `space` to toggle the editor view
+- Add nodes by selecting them from the left panel
+- Click on a node to edit its parameters. Toggling the checkbox turns it into an input, allowing you to connect a controller node (yellow node), such as a MIDI controller or LFO
 
 ### Images as it's better to get an idea
 ![](img/ex1.png)
@@ -24,3 +24,4 @@ add the nodes you want by selecting them in the left panel
  - code your own shaders (GLSL)
  - import medias
  - all the basic effects
+ - save/load/add a scene (json format)
