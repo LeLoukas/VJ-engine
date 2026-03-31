@@ -1,5 +1,7 @@
 # VJ-engine
 
+You can try here https://leloukas.github.io/VJ-engine/ or locally
+
 ### Install
 No install needed, just
 1) Clone the project
@@ -11,6 +13,7 @@ No install needed, just
 - Click `space` to toggle the editor view
 - Add nodes by selecting them from the left panel
 - Click on a node to edit its parameters. Toggling the checkbox turns it into an input, allowing you to connect a controller node (yellow node), such as a MIDI controller or LFO
+- Right click a node to delete it
 
 ### Images as it's better to get an idea
 ![](img/ex1.png)
